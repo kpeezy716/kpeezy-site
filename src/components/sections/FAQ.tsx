@@ -1,0 +1,6 @@
+"use client";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { SectionTitle } from "@/components/ui/SectionTitle";
+const items = [["Сколько занимает разработка?", "Простой Telegram-бот обычно можно запустить значительно быстрее сложной системы с Mini App и интеграциями. Точный срок зависит от сценария проекта."],["Можно подключить CRM?", "Да. Архитектура может включать CRM, YCLIENTS, Google Sheets и другие системы через API и webhooks."],["Можно сделать бота под мой бизнес?", "Да. Сценарий проектируется под конкретный процесс компании."],["Вы работаете только с Telegram?", "Основное направление — Telegram-боты, Mini Apps и связанные бизнес-интеграции."],["Можно начать с небольшой версии?", "Да. Часто разумнее сначала сделать MVP, проверить сценарий и затем расширять систему."]];
+export function FAQ() { const [open, setOpen] = useState(0); return <section className="section shell faq"><SectionTitle eyebrow="FAQ" title="Частые вопросы"/>{items.map(([q,a], i) => <article className={open===i ? "open" : ""} key={q}><button onClick={() => setOpen(open===i ? -1 : i)}>{q}<ChevronDown size={18}/></button>{open===i && <p>{a}</p>}</article>)}</section>; }

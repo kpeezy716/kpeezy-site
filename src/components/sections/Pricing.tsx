@@ -1,0 +1,4 @@
+import { Check, ArrowRight } from "lucide-react";
+import { pricing } from "@/data/pricing";
+import { SectionTitle } from "@/components/ui/SectionTitle";
+export function Pricing() { return <section id="pricing" className="section shell"><SectionTitle eyebrow="ПОНЯТНЫЙ СТАРТ" title="Стоимость разработки" text="Финальная стоимость зависит от сценария и необходимых интеграций."/><div className="pricing-grid">{pricing.map((plan) => <article key={plan.name} className={`price-card ${plan.popular ? "popular" : ""}`}>{plan.popular && <span className="popular-badge">Популярный</span>}<h3>{plan.name}</h3><p className="price">{plan.price} <small>{plan.suffix}</small></p><p className={`price-description ${plan.description ? "" : "is-empty"}`}>{plan.description ?? "Описание тарифа"}</p><ul>{plan.features.map((feature) => <li key={feature}><Check size={15}/>{feature}</li>)}</ul><a href="#demo">Попробовать демо <ArrowRight size={15}/></a></article>)}</div></section>; }
