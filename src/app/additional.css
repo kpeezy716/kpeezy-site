@@ -27,3 +27,7 @@
 .demo-picker{background:transparent;border:0;border-radius:0;padding:0}.experience-frame{background:transparent;border:0;border-radius:0;box-shadow:none}
 .experience-label{max-width:810px;margin:0 auto 12px;border-bottom:0}.experience-label span{flex:0 0 auto}.experience-label p{text-align:right}
 .experience-label{max-width:none;margin:0 0 12px}.phone{background:#050607!important;border:8px solid #090b0e!important;border-radius:39px!important;padding:5px!important;box-shadow:0 25px 48px rgba(0,0,0,.62)!important}
+/* Keep the message input and send control independently tappable on compact screens. */
+.input-flow{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:6px;align-items:stretch}.input-flow input{grid-column:1;min-width:0}.input-flow button{float:none;margin:0;width:44px;min-height:42px;padding:0;grid-column:2;grid-row:1;display:grid;place-items:center}.input-flow p{grid-column:1 / -1;margin:0 1px}
+/* Mobile touch targets for compact text and icon actions. */
+.brand{min-height:40px;align-items:center}.menu,.back-button{min-width:40px;min-height:40px;display:grid;place-items:center}.telegram-start{min-height:44px;display:flex;align-items:center;justify-content:center}.reset{min-height:40px;padding:10px 12px}.service-preview button{min-height:36px}.footer-inner>a{display:inline-flex;align-items:center;min-height:36px;padding:8px 0}
