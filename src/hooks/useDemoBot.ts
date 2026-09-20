@@ -38,7 +38,7 @@ function reducer(state: DemoState, action: Action): DemoState {
 export function useDemoBot(scenario: DemoScenario, plan: PricingPlan) {
   const activeScenario = useMemo<DemoScenario>(() => ({
     ...scenario,
-    startStepId: plan.entry === "industry" ? scenario.startStepId : "__plan__",
+    startStepId: scenario.forceScenarioEntry || plan.entry === "industry" ? scenario.startStepId : "__plan__",
     steps: {
       ...scenario.steps,
       __plan__: { ...plan.demoStep, id: "__plan__", options: plan.demoStep.options?.map((option) => ({ ...option, nextStepId: option.nextStepId === "__industry__" ? scenario.startStepId : option.nextStepId })) },

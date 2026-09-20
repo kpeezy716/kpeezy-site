@@ -1,8 +1,8 @@
 export type DemoOption = { id: string; label: string; value?: string; nextStepId: string; saveAs?: string };
 export type DemoInput = { type: "text" | "phone"; placeholder: string; saveAs: string; nextStepId: string };
-export type DemoStep = { id: string; botMessage: string; options?: DemoOption[]; input?: DemoInput; integration?: string; completed?: boolean };
+export type DemoStep = { id: string; botMessage: string; options?: DemoOption[]; input?: DemoInput; integration?: string; completed?: boolean; miniApp?: { title: string; tabs: string[]; note?: string } };
 export type IndustryIcon = "scissors" | "spray" | "tire" | "education" | "repair" | "home" | "business" | "medical";
-export type DemoScenario = { id: string; industry: string; title: string; description: string; icon: IndustryIcon; startStepId: string; steps: Record<string, DemoStep> };
+export type DemoScenario = { id: string; industry: string; title: string; description: string; icon: IndustryIcon; startStepId: string; steps: Record<string, DemoStep>; forceScenarioEntry?: boolean };
 export type ChatMessage = { id: string; sender: "bot" | "user"; text: string; timestamp?: string };
 export type DemoHistory = { currentStepId: string; messages: ChatMessage[]; collectedData: Record<string, string>; integration?: string };
 export type DemoState = { scenarioId: string; currentStepId: string; messages: ChatMessage[]; collectedData: Record<string, string>; isTyping: boolean; completed: boolean; integration?: string; history: DemoHistory[] };
