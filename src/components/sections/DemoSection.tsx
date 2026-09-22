@@ -9,12 +9,15 @@ import { DemoBot, BusinessResult } from "@/components/demo-bot/DemoBot";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { resolveBusinessProfile, normalizeBusinessName } from "@/lib/resolveBusinessProfile";
 import { buildDynamicScenario } from "@/lib/buildDynamicScenario";
-import type { BusinessProfile } from "@/data/businessProfiles";
+import { profileFor, type BusinessProfile } from "@/data/businessProfiles";
 
 const industryIcons = { scissors: Scissors, spray: SprayCan, tire: CarFront, education: GraduationCap, repair: Wrench, home: House, business: BriefcaseBusiness, medical: Stethoscope };
 const demoPlans = pricing.filter((plan) => plan.id !== "support");
 const industryAliases: Record<string, string> = { barbershop: "beauty", beauty: "beauty", spa: "beauty", cleaning: "cleaning", autoservice: "auto", "auto-service": "auto", auto: "auto", education: "education", clinic: "medical", dentistry: "medical", medical: "medical", repair: "repair", realty: "realty", b2b: "b2b" };
 const industrySlugs: Record<string, string> = { beauty: "barbershop", cleaning: "cleaning", auto: "autoservice", education: "education", medical: "clinic", repair: "repair", realty: "realty", b2b: "b2b" };
+const scenarioProfiles: Record<string, BusinessProfile> = {
+  beauty: profileFor("Барбершоп / Beauty / SPA", "beauty"), cleaning: profileFor("Клининг", "cleaning"), auto: profileFor("Автосервис / детейлинг", "auto"), education: profileFor("Образование", "education"), medical: profileFor("Стоматология / клиника", "medical"), repair: profileFor("Ремонт / выездные услуги", "repair"), realty: profileFor("Недвижимость", "realty"), b2b: profileFor("B2B услуги", "b2b"),
+};
 
 function linkFor(plan: PricingPlan, scenario: DemoScenario) {
   const params = new URLSearchParams({ tariff: plan.id, industry: industrySlugs[scenario.id] ?? "cleaning" });
@@ -35,7 +38,8 @@ export function DemoSection() {
   const demoRef = useRef<HTMLDivElement>(null);
   const sync = useCallback((newData: Record<string, string>, nextIntegration?: string) => { setData(newData); setIntegration(nextIntegration); }, []);
   const resetDemo = () => { setData({}); setIntegration(undefined); setKey((value) => value + 1); };
-  const activeScenario = useMemo(() => customBusinessProfile ? buildDynamicScenario(customBusinessProfile, selectedPlan) : selectedScenario, [customBusinessProfile, selectedPlan, selectedScenario]);
+  const activeProfile = customBusinessProfile ?? scenarioProfiles[selectedScenario.id] ?? resolveBusinessProfile(selectedScenario.industry);
+  const activeScenario = useMemo(() => buildDynamicScenario(activeProfile, selectedPlan, customBusinessProfile ? "custom" : selectedScenario.id), [activeProfile, customBusinessProfile, selectedPlan, selectedScenario.id]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -79,7 +83,7 @@ export function DemoSection() {
     }, 0);
   };
   const shareDemo = async () => {
-    try { await navigator.clipboard.writeText(linkFor(selectedPlan, selectedScenario)); setCopied(true); window.setTimeout(() => setCopied(false), 1800); } catch { setCopied(false); }
+    try { await navigator.clipboard.writeText(linkFor(selectedPlan, activeScenario)); setCopied(true); window.setTimeout(() => setCopied(false), 1800); } catch { setCopied(false); }
   };
   const selectedFeatures = useMemo(() => selectedPlan.features.slice(0, 4), [selectedPlan.features]);
 

@@ -1,5 +1,5 @@
-export type BusinessArchetype = "beauty" | "food" | "auto" | "medical" | "education" | "realty" | "repair" | "b2b" | "generic";
-export type BusinessIcon = "scissors" | "utensils" | "car" | "stethoscope" | "graduation" | "house" | "wrench" | "briefcase";
+export type BusinessArchetype = "beauty" | "cleaning" | "food" | "auto" | "medical" | "education" | "realty" | "repair" | "b2b" | "generic";
+export type BusinessIcon = "scissors" | "spray" | "utensils" | "car" | "stethoscope" | "graduation" | "house" | "wrench" | "briefcase";
 
 export type BusinessProfile = {
   name: string;
@@ -17,6 +17,7 @@ type ProfileTemplate = Omit<BusinessProfile, "name">;
 
 export const businessProfiles: Record<BusinessArchetype, ProfileTemplate> = {
   beauty: { archetype: "beauty", icon: "scissors", serviceLabel: "Услуга", services: ["Стрижка", "Окрашивание", "Укладка"], detailQuestion: "Когда вам удобно записаться?", contactPrompt: "Оставьте телефон для подтверждения записи", integration: "YCLIENTS", completion: "Запись передана администратору." },
+  cleaning: { archetype: "cleaning", icon: "spray", serviceLabel: "Уборка", services: ["Поддерживающая уборка", "Генеральная уборка", "Уборка после ремонта"], detailQuestion: "Какой объём работ нужен?", contactPrompt: "Оставьте телефон для уточнения расчёта", integration: "CRM", completion: "Заявка передана менеджеру клининга." },
   food: { archetype: "food", icon: "utensils", serviceLabel: "Заказ", services: ["Посмотреть меню", "Забронировать столик", "Оформить заказ"], detailQuestion: "На какое время или дату оформить запрос?", contactPrompt: "Оставьте телефон для подтверждения", integration: "CRM", completion: "Запрос передан менеджеру ресторана." },
   auto: { archetype: "auto", icon: "car", serviceLabel: "Услуга", services: ["Диагностика", "Техническое обслуживание", "Шиномонтаж"], detailQuestion: "Когда удобно приехать?", contactPrompt: "Оставьте телефон, чтобы подтвердить время", integration: "CRM", completion: "Заявка передана в автосервис." },
   medical: { archetype: "medical", icon: "stethoscope", serviceLabel: "Приём", services: ["Консультация специалиста", "Профилактический осмотр", "Лечение"], detailQuestion: "Выберите удобный день для приёма", contactPrompt: "Оставьте телефон для подтверждения записи", integration: "YCLIENTS", completion: "Запись передана администратору клиники." },

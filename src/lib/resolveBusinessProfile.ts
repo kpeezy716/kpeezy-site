@@ -2,6 +2,7 @@ import { profileFor, type BusinessArchetype, type BusinessProfile } from "@/data
 
 const rules: Array<[BusinessArchetype, string[]]> = [
   ["beauty", ["барбер", "barber", "салон", "beauty", "космет", "spa", "спа", "маникюр", "парикмах"]],
+  ["cleaning", ["клининг", "cleaning", "уборк", "химчист"]],
   ["food", ["ресторан", "restaurant", "кафе", "coffee", "кофе", "пицц", "еда", "food", "бар "]],
   ["auto", ["авто", "car", "шиномонтаж", "детейл", "детейлинг", "сто", "гараж"]],
   ["medical", ["стомат", "dental", "клиник", "clinic", "медиц", "врач", "doctor", "health"]],
