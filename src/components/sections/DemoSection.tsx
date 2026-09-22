@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BriefcaseBusiness, CarFront, Check, Copy, GraduationCap, House, Layers3, Scissors, SprayCan, Stethoscope, Wrench } from "lucide-react";
+import { BriefcaseBusiness, Camera, CarFront, Check, Copy, GraduationCap, House, Layers3, Scissors, SprayCan, Stethoscope, Wrench } from "lucide-react";
 import { scenarios } from "@/data/scenarios";
 import { pricing, type PricingPlan } from "@/data/pricing";
 import type { DemoScenario } from "@/types/demo";
@@ -11,12 +11,12 @@ import { resolveBusinessProfile, normalizeBusinessName } from "@/lib/resolveBusi
 import { buildDynamicScenario } from "@/lib/buildDynamicScenario";
 import { profileFor, type BusinessProfile } from "@/data/businessProfiles";
 
-const industryIcons = { scissors: Scissors, spray: SprayCan, tire: CarFront, education: GraduationCap, repair: Wrench, home: House, business: BriefcaseBusiness, medical: Stethoscope };
+const industryIcons = { scissors: Scissors, spray: SprayCan, tire: CarFront, education: GraduationCap, repair: Wrench, home: House, business: BriefcaseBusiness, medical: Stethoscope, camera: Camera };
 const demoPlans = pricing.filter((plan) => plan.id !== "support");
-const industryAliases: Record<string, string> = { barbershop: "beauty", beauty: "beauty", spa: "beauty", cleaning: "cleaning", autoservice: "auto", "auto-service": "auto", auto: "auto", education: "education", clinic: "medical", dentistry: "medical", medical: "medical", repair: "repair", realty: "realty", b2b: "b2b" };
-const industrySlugs: Record<string, string> = { beauty: "barbershop", cleaning: "cleaning", auto: "autoservice", education: "education", medical: "clinic", repair: "repair", realty: "realty", b2b: "b2b" };
+const industryAliases: Record<string, string> = { barbershop: "beauty", beauty: "beauty", spa: "beauty", cleaning: "cleaning", autoservice: "auto", "auto-service": "auto", auto: "auto", education: "education", clinic: "medical", dentistry: "medical", medical: "medical", repair: "repair", realty: "realty", b2b: "b2b", photo: "photo", photostudio: "photo", "photo-studio": "photo", "фотостудия": "photo" };
+const industrySlugs: Record<string, string> = { beauty: "barbershop", cleaning: "cleaning", auto: "autoservice", education: "education", medical: "clinic", repair: "repair", realty: "realty", b2b: "b2b", photo: "photostudio" };
 const scenarioProfiles: Record<string, BusinessProfile> = {
-  beauty: profileFor("Барбершоп / Beauty / SPA", "beauty"), cleaning: profileFor("Клининг", "cleaning"), auto: profileFor("Автосервис / детейлинг", "auto"), education: profileFor("Образование", "education"), medical: profileFor("Стоматология / клиника", "medical"), repair: profileFor("Ремонт / выездные услуги", "repair"), realty: profileFor("Недвижимость", "realty"), b2b: profileFor("B2B услуги", "b2b"),
+  beauty: profileFor("Барбершоп / Beauty / SPA", "beauty"), cleaning: profileFor("Клининг", "cleaning"), auto: profileFor("Автосервис / детейлинг", "auto"), education: profileFor("Образование", "education"), medical: profileFor("Стоматология / клиника", "medical"), repair: profileFor("Ремонт / выездные услуги", "repair"), realty: profileFor("Недвижимость", "realty"), b2b: profileFor("B2B услуги", "b2b"), photo: profileFor("Фотостудия", "photo"),
 };
 
 function linkFor(plan: PricingPlan, scenario: DemoScenario) {

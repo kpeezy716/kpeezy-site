@@ -1,4 +1,4 @@
-import type { BusinessArchetype, BusinessProfile } from "@/data/businessProfiles";
+import { profileFor, type BusinessArchetype, type BusinessProfile } from "@/data/businessProfiles";
 import type { PricingPlan } from "@/data/pricing";
 import type { DemoMiniApp, DemoOption, DemoScenario, DemoStep } from "@/types/demo";
 
@@ -14,6 +14,7 @@ const catalogues: Record<BusinessArchetype, CatalogItem[]> = {
   realty: [{ title: "Купить объект", description: "Подбор по бюджету", meta: "Новые варианты" }, { title: "Снять объект", description: "Актуальные предложения", meta: "Без комиссии" }, { title: "Получить консультацию", description: "Оценка запроса", meta: "Ответ сегодня" }],
   repair: [{ title: "Вызвать мастера", description: "Выезд и диагностика", meta: "Сегодня" }, { title: "Получить расчёт", description: "Предварительная смета", meta: "За 5 минут" }, { title: "Срочный выезд", description: "Мастер в ближайшее окно", meta: "от 60 мин" }],
   b2b: [{ title: "Получить консультацию", description: "Разбор текущего процесса", meta: "30 минут" }, { title: "Обсудить проект", description: "Оценка решения и сроков", meta: "Онлайн" }, { title: "Оставить заявку", description: "Передача в нужную команду", meta: "Ответ сегодня" }],
+  photo: [{ title: "Аренда зала", description: "Самостоятельная съёмка", meta: "от 2 000 ₽ / час" }, { title: "Фотосессия с фотографом", description: "Зал, свет и работа фотографа", meta: "от 7 500 ₽" }, { title: "Контент-съёмка", description: "Для бренда, каталога или соцсетей", meta: "от 12 000 ₽" }],
   generic: [{ title: "Узнать об услугах", description: "Основные направления", meta: "Каталог" }, { title: "Получить консультацию", description: "Короткий разбор задачи", meta: "Сегодня" }, { title: "Оставить заявку", description: "Связь с командой", meta: "Ответ в Telegram" }],
 };
 
@@ -27,6 +28,7 @@ const specialists: Record<BusinessArchetype, CatalogItem[]> = {
   realty: [{ title: "Подборка №1", description: "5 объектов по запросу", meta: "Новые сегодня" }, { title: "Личный брокер", description: "Сопровождение сделки", meta: "Связь в Telegram" }],
   repair: [{ title: "Мастер Сергей", description: "Выезд и диагностика", meta: "Сегодня · 15:00" }, { title: "Мастер Павел", description: "Срочные работы", meta: "В ближайший час" }],
   b2b: [{ title: "Аналитик процесса", description: "Разберёт текущую схему", meta: "Сегодня" }, { title: "Руководитель проекта", description: "Оценит решение и сроки", meta: "На этой неделе" }],
+  photo: [{ title: "Light hall", description: "Панорамные окна · 55 м²", meta: "Сегодня · 14:00" }, { title: "Loft hall", description: "Фактурные стены · 70 м²", meta: "Сегодня · 18:00" }, { title: "Циклорама", description: "Белый фон · 45 м²", meta: "Завтра · 11:00" }],
   generic: [{ title: "Специалист команды", description: "Подберёт решение", meta: "Сегодня" }, { title: "Менеджер проекта", description: "Свяжется удобным способом", meta: "В Telegram" }],
 };
 
@@ -100,8 +102,72 @@ function miniAppSteps(profile: BusinessProfile): Record<string, DemoStep> {
   };
 }
 
+const photoFormats = (nextStepId: string) => [option("hall-rent", "Аренда зала", nextStepId, "Формат съёмки", "Самостоятельная съёмка в студии", "от 2 000 ₽ / час"), option("photographer", "Фотосессия с фотографом", nextStepId, "Формат съёмки", "Зал, свет и работа фотографа", "от 7 500 ₽"), option("content", "Контент-съёмка", nextStepId, "Формат съёмки", "Для бренда, каталога или соцсетей", "от 12 000 ₽")];
+const photoHalls = (nextStepId: string) => fromSpecialists(profileFor("Фотостудия", "photo"), nextStepId).map((item) => ({ ...item, saveAs: "Зал" }));
+const photoDates = (nextStepId: string) => [option("today", "Сегодня", nextStepId, "Дата", "Осталось 2 окна", "14:00 · 18:00"), option("tomorrow", "Завтра", nextStepId, "Дата", "Больше доступного времени", "11:00 · 15:00"), option("weekend", "На выходных", nextStepId, "Дата", "Популярные часы", "3 окна")];
+const photoTimes = (nextStepId: string) => [option("time-11", "11:00–12:00", nextStepId, "Время", "1 час аренды", "Свободно"), option("time-14", "14:00–16:00", nextStepId, "Время", "2 часа — популярный слот", "Свободно"), option("time-18", "18:00–20:00", nextStepId, "Время", "Вечерняя съёмка", "Свободно")];
+const photoExtras = (nextStepId: string) => [option("makeup", "Нужен визажист", nextStepId, "Дополнительно", "Добавим к бронированию", "+ 3 000 ₽"), option("equipment", "Нужен свет и оборудование", nextStepId, "Дополнительно", "Подготовим до вашего прихода", "+ 1 500 ₽"), option("none", "Только зал", nextStepId, "Дополнительно", "Без дополнительных услуг", "Готово")];
+
+function photoFunnelSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  return {
+    welcome: { id: "welcome", botMessage: `Здравствуйте! Помогу быстро подобрать формат съёмки в «${profile.name}».`, options: [option("start-booking", "Забронировать зал", "format", "Цель", "Подберём зал и доступный день", "≈ 2 минуты"), option("consult", "Нужна консультация", "format", "Цель", "Соберём запрос для администратора", "Без звонка")] },
+    format: { id: "format", botMessage: "Какой формат съёмки планируете?", options: photoFormats("hall") },
+    hall: { id: "hall", botMessage: "Какой зал вам ближе по стилю?", options: photoHalls("date") },
+    date: { id: "date", botMessage: "Когда планируете съёмку?", options: photoDates("contact-channel") },
+    "contact-channel": { id: "contact-channel", botMessage: "Куда отправить подборку зала и свободных окон?", options: [option("telegram", "В Telegram", "name", "Канал связи", "Администратор пришлёт подборку", "Telegram"), option("call", "Звонком", "name", "Канал связи", "Уточним детали по телефону", "Звонок")] },
+    name: name("phone"), phone: phone("Оставьте телефон — администратор закрепит выбранный зал и свяжется с вами.", "done"), done: completed(profile, "Telegram администратору"),
+  };
+}
+
+function photoBasicSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const integration = "CRM + расписание залов";
+  return {
+    welcome: { id: "welcome", botMessage: `Добро пожаловать в «${profile.name}»! Что хотите забронировать?`, options: [option("catalogue", "Залы и форматы съёмки", "format", "Раздел", "Каталог с ценами и условиями", "Каталог"), option("booking", "Быстрое бронирование", "hall", "Раздел", "Сразу выбрать зал и время", "Онлайн"), option("rules", "Условия аренды", "format", "Раздел", "Правила, оборудование и опции", "FAQ")] },
+    format: { id: "format", botMessage: "Выберите формат — мы покажем подходящие залы:", options: photoFormats("hall") },
+    hall: { id: "hall", botMessage: "Выберите зал и посмотрите его характеристики:", integration, options: photoHalls("date") },
+    date: { id: "date", botMessage: "Расписание зала обновлено в реальном времени. Выберите дату:", integration, options: photoDates("time") },
+    time: { id: "time", botMessage: "Какой слот бронируем?", options: photoTimes("extras") },
+    extras: { id: "extras", botMessage: "Нужны дополнительные опции к съёмке?", options: photoExtras("name") },
+    name: name("phone"), phone: phone("Оставьте телефон — отправим подтверждение бронирования и детали по залу.", "done"), done: completed(profile, integration),
+  };
+}
+
+function photoAdvancedSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const integration = "CRM + онлайн-оплата";
+  return {
+    welcome: { id: "welcome", botMessage: `Здравствуйте! «${profile.name}» учитывает историю бронирований, чтобы быстрее собрать съёмку.`, options: [option("new", "Я бронирую впервые", "format", "Статус клиента", "Подберём зал и формат с нуля", "Новый клиент"), option("return", "Я уже был в студии", "client-card", "Статус клиента", "Повторим любимый зал или услугу", "Личный путь")] },
+    "client-card": { id: "client-card", botMessage: "Нашли ваш профиль: раньше вы выбирали Loft hall. Что сделать?", integration, options: [option("repeat", "Повторить Loft hall", "date", "Действие", "Быстрое бронирование по истории", "1 минута"), option("new-hall", "Подобрать другой зал", "format", "Действие", "Учтём задачу и стиль съёмки", "Подбор")] },
+    format: { id: "format", botMessage: "Для какой съёмки нужен зал?", options: photoFormats("hall") },
+    hall: { id: "hall", botMessage: "Подобрали залы по формату, свету и площади:", integration, options: photoHalls("date") },
+    date: { id: "date", botMessage: "Выберите свободную дату — слот будет удержан 15 минут:", integration, options: photoDates("time") },
+    time: { id: "time", botMessage: "Выберите длительность и время съёмки:", options: photoTimes("extras") },
+    extras: { id: "extras", botMessage: "Добавим услуги и оборудование к единому заказу:", options: photoExtras("name") },
+    name: name("phone"), phone: phone("Оставьте телефон — создадим карточку бронирования и отправим ссылку на предоплату.", "crm"),
+    crm: { id: "crm", botMessage: "Бронирование создано в CRM: зал, слот, услуги и контакт собраны в одной карточке.", integration, options: [option("payment", "Получить ссылку на предоплату", "automation", "Следующее действие", "Слот закрепится после оплаты", "2 000 ₽"), option("reminder", "Поставить напоминание", "automation", "Следующее действие", "Напомним за 24 часа", "Автоматически")] },
+    automation: { id: "automation", botMessage: "Автоматизация готова: клиент получит подтверждение, ссылку на оплату и напоминание, а команда увидит статус брони.", integration, options: [option("finish", "Завершить бронирование", "done", "Статус", "Все действия записаны", "Готово")] }, done: completed(profile, integration),
+  };
+}
+
+function photoMiniAppSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const integration = "Mini App + CRM + онлайн-оплата";
+  const app = (note: string, subtitle: string, section: string) => mini(profile, note, subtitle, section);
+  return {
+    home: { id: "home", botMessage: `Откройте Mini App «${profile.name}»: здесь клиент сам подбирает зал и завершает бронирование.`, miniApp: app("Бронирование фотостудии", "Залы, свободные слоты и заказ в одном интерфейсе", "Главная"), options: [option("catalogue", "Подобрать зал", "format", "Раздел", "По формату, свету и площади", "Залы"), option("booking", "Мои бронирования", "account", "Раздел", "Активные съёмки и история", "Профиль")] },
+    format: { id: "format", botMessage: "Выберите формат съёмки:", miniApp: app("Формат съёмки", "Каталог подскажет подходящие залы", "Каталог"), options: photoFormats("hall") },
+    hall: { id: "hall", botMessage: "Карточки залов показывают площадь, стиль и доступные слоты:", miniApp: app("Выберите зал", "Фильтр по свету, стилю и площади", "Каталог"), options: photoHalls("date") },
+    date: { id: "date", botMessage: "Расписание синхронизировано с бронями студии:", integration, miniApp: app("Свободные даты", "Выберите день для съёмки", "Расписание"), options: photoDates("time") },
+    time: { id: "time", botMessage: "Выберите свободный слот:", integration, miniApp: app("Время съёмки", "Слот удерживается до оформления", "Расписание"), options: photoTimes("extras") },
+    extras: { id: "extras", botMessage: "Добавьте услуги к заказу в один тап:", miniApp: app("Дополнительные услуги", "Визажист, свет и оборудование", "Каталог"), options: photoExtras("phone") },
+    phone: phone("Оставьте телефон — после предоплаты бронирование появится в личном кабинете.", "checkout"),
+    checkout: { id: "checkout", botMessage: "Слот удержан. Подтвердите бронирование предоплатой:", integration, miniApp: app("Подтверждение брони", "Безопасная предоплата закрепляет выбранный слот", "Расписание"), options: [option("pay", "Внести предоплату", "account", "Оплата", "Бронь будет подтверждена", "2 000 ₽"), option("change", "Изменить время", "time", "Действие", "Вернуться к расписанию", "Назад")] },
+    account: { id: "account", botMessage: "Бронирование подтверждено. В личном кабинете доступны зал, время, услуги и инструкция к съёмке.", integration, miniApp: app("Моё бронирование", "Все детали собраны в одной карточке", "Профиль"), options: [option("details", "Посмотреть бронь", "done", "Раздел", "Зал, дата, время и услуги", "Активно"), option("repeat", "Повторить съёмку", "format", "Действие", "Создать новую бронь по шаблону", "Быстро")] },
+    done: completed(profile, integration),
+  };
+}
+
 export function buildDynamicScenario(profile: BusinessProfile, tariff: PricingPlan, scenarioId = "custom"): DemoScenario {
-  const steps = tariff.id === "miniapp" ? miniAppSteps(profile) : tariff.id === "advanced" ? advancedSteps(profile) : tariff.id === "funnel" ? funnelSteps(profile) : basicSteps(profile);
+  const photoSteps = tariff.id === "miniapp" ? photoMiniAppSteps : tariff.id === "advanced" ? photoAdvancedSteps : tariff.id === "funnel" ? photoFunnelSteps : photoBasicSteps;
+  const steps = profile.archetype === "photo" ? photoSteps(profile) : tariff.id === "miniapp" ? miniAppSteps(profile) : tariff.id === "advanced" ? advancedSteps(profile) : tariff.id === "funnel" ? funnelSteps(profile) : basicSteps(profile);
   const titleByPlan: Record<string, string> = { funnel: "Автоматическая воронка", basic: "Каталог и запись", advanced: "Персональный сценарий", miniapp: "Mini App: интерфейс клиента" };
   const descriptionByPlan: Record<string, string> = { funnel: "Быстрая квалификация и передача", basic: "Услуги, FAQ и онлайн-запись", advanced: "CRM, сегменты и автоматизация", miniapp: "Каталог, расписание и личный кабинет" };
   return { id: scenarioId, industry: profile.name, title: titleByPlan[tariff.id] ?? "Сценарий клиента", description: descriptionByPlan[tariff.id] ?? "Путь клиента", icon: "business", startStepId: tariff.id === "miniapp" ? "home" : "welcome", steps, forceScenarioEntry: true };

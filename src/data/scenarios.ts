@@ -89,6 +89,17 @@ export const scenarios: DemoScenario[] = [
     }
   },
   {
+    id: "photo", industry: "Фотостудия", title: "Бронирование зала", description: "Формат → зал → время", icon: "camera", startStepId: "format",
+    steps: {
+      format: { id: "format", botMessage: "Какой формат съёмки планируете?", options: choice("format", ["Аренда зала", "Фотосессия", "Контент-съёмка"], "hall", "Формат съёмки") },
+      hall: { id: "hall", botMessage: "Выберите зал:", options: choice("hall", ["Light hall", "Loft hall", "Циклорама"], "date", "Зал") },
+      date: { id: "date", botMessage: "Выберите дату:", options: choice("date", ["Сегодня", "Завтра", "На выходных"], "time", "Дата") },
+      time: { id: "time", botMessage: "Выберите время:", options: choice("time", ["11:00", "14:00", "18:00"], "phone", "Время") },
+      phone: { id: "phone", botMessage: "Оставьте телефон для подтверждения бронирования", input: { type: "phone", placeholder: "+7 999 000 00 00", saveAs: "Телефон", nextStepId: "done" } },
+      done: end("Бронирование передано администратору фотостудии.", "CRM")
+    }
+  },
+  {
     id: "b2b", industry: "B2B услуги", title: "Квалификация запроса", description: "Задача → масштаб → контакт", icon: "business", startStepId: "need",
     steps: {
       need: { id: "need", botMessage: "Здравствуйте!\n\nПомогу передать вашу задачу нужному специалисту.\n\nЧто требуется?", options: choice("need", ["Telegram-бот", "Mini App", "AI-автоматизация", "Интеграция CRM"], "size", "Задача") },

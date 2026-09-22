@@ -1,5 +1,5 @@
-export type BusinessArchetype = "beauty" | "cleaning" | "food" | "auto" | "medical" | "education" | "realty" | "repair" | "b2b" | "generic";
-export type BusinessIcon = "scissors" | "spray" | "utensils" | "car" | "stethoscope" | "graduation" | "house" | "wrench" | "briefcase";
+export type BusinessArchetype = "beauty" | "cleaning" | "food" | "auto" | "medical" | "education" | "realty" | "repair" | "b2b" | "photo" | "generic";
+export type BusinessIcon = "scissors" | "spray" | "utensils" | "car" | "stethoscope" | "graduation" | "house" | "wrench" | "briefcase" | "camera";
 
 export type BusinessProfile = {
   name: string;
@@ -25,6 +25,7 @@ export const businessProfiles: Record<BusinessArchetype, ProfileTemplate> = {
   realty: { archetype: "realty", icon: "house", serviceLabel: "Задача", services: ["Купить объект", "Снять объект", "Получить консультацию"], detailQuestion: "Какой район рассматриваете?", contactPrompt: "Оставьте телефон для подбора вариантов", integration: "CRM", completion: "Запрос передан специалисту по недвижимости." },
   repair: { archetype: "repair", icon: "wrench", serviceLabel: "Задача", services: ["Вызвать мастера", "Получить расчёт", "Срочный выезд"], detailQuestion: "Коротко опишите задачу", contactPrompt: "Оставьте телефон для связи с мастером", integration: "CRM", completion: "Заявка передана мастеру." },
   b2b: { archetype: "b2b", icon: "briefcase", serviceLabel: "Запрос", services: ["Получить консультацию", "Обсудить проект", "Оставить заявку"], detailQuestion: "Коротко опишите задачу", contactPrompt: "Оставьте контакт для связи", integration: "CRM", completion: "Запрос передан менеджеру." },
+  photo: { archetype: "photo", icon: "camera", serviceLabel: "Съёмка", services: ["Аренда зала", "Фотосессия с фотографом", "Контент-съёмка"], detailQuestion: "Какой формат съёмки планируете?", contactPrompt: "Оставьте телефон для подтверждения бронирования", integration: "CRM + онлайн-оплата", completion: "Бронирование зала передано администратору." },
   generic: { archetype: "generic", icon: "briefcase", serviceLabel: "Запрос", services: ["Узнать об услугах", "Получить консультацию", "Оставить заявку"], detailQuestion: "Коротко опишите, что вам нужно", contactPrompt: "Оставьте контакт для связи", integration: "CRM", completion: "Запрос передан менеджеру." },
 };
 

@@ -10,6 +10,7 @@ const rules: Array<[BusinessArchetype, string[]]> = [
   ["realty", ["недвиж", "real estate", "риелтор", "застрой", "квартир", "жил"]],
   ["repair", ["ремонт", "repair", "мастер", "сантех", "электрик", "кондиционер", "монтаж"]],
   ["b2b", ["b2b", "агентств", "agency", "консалт", "consult", "производств", "логист"]],
+  ["photo", ["фотостуд", "фото студ", "photo studio", "photostudio", "фотограф", "съемк", "съёмк"]],
 ];
 
 export function normalizeBusinessName(value: string) {
