@@ -33,7 +33,12 @@ const specialists: Record<BusinessArchetype, CatalogItem[]> = {
 };
 
 const option = (id: string, label: string, nextStepId: string, saveAs: string, description?: string, meta?: string): DemoOption => ({ id, label, nextStepId, saveAs, description, meta });
-const fromCatalogue = (profile: BusinessProfile, nextStepId: string) => catalogues[profile.archetype].map((item, index) => option(`service-${index}`, item.title, nextStepId, profile.serviceLabel, item.description, item.meta));
+const genericCatalogue = (profile: BusinessProfile): CatalogItem[] => [
+  { title: "Подобрать решение", description: `Варианты для «${profile.name}»`, meta: "Подбор" },
+  { title: "Рассчитать стоимость", description: "Соберём параметры за несколько шагов", meta: "Расчёт" },
+  { title: "Запланировать консультацию", description: "Выберите удобный формат и время", meta: "Онлайн" },
+];
+const fromCatalogue = (profile: BusinessProfile, nextStepId: string) => (profile.archetype === "generic" ? genericCatalogue(profile) : catalogues[profile.archetype]).map((item, index) => option(`service-${index}`, item.title, nextStepId, profile.serviceLabel, item.description, item.meta));
 const fromSpecialists = (profile: BusinessProfile, nextStepId: string) => specialists[profile.archetype].map((item, index) => option(`expert-${index}`, item.title, nextStepId, "Специалист", item.description, item.meta));
 const bookingIntegration = (profile: BusinessProfile) => ["beauty", "medical", "education"].includes(profile.archetype) ? "YCLIENTS" : "CRM";
 const phone = (message: string, nextStepId: string, saveAs = "Телефон"): DemoStep => ({ id: "phone", botMessage: message, input: { type: "phone", placeholder: "+7 999 000 00 00", saveAs, nextStepId } });
@@ -98,6 +103,139 @@ function miniAppSteps(profile: BusinessProfile): Record<string, DemoStep> {
     time: { id: "time", botMessage: "Выберите конкретное окно:", integration, miniApp: mini(profile, "Выбор времени", "Бронирование займёт один шаг", "Расписание"), options: [option("first", "10:30", "phone", "Время", "Первое доступное окно", "Свободно"), option("second", "14:00", "phone", "Время", "Дневное окно", "Свободно"), option("third", "18:30", "phone", "Время", "Вечернее окно", "Свободно")] },
     phone: phone("Оставьте телефон — запись появится в личном кабинете сразу после подтверждения.", "account"),
     account: { id: "account", botMessage: "Личный кабинет обновлён: здесь клиент видит запись, историю и персональные предложения.", integration, miniApp: mini(profile, "Ваш личный кабинет", "Запись сохранится здесь после подтверждения", "Профиль"), options: [option("appointment", "Моя запись", "done", "Раздел", "Дата, время и выбранная услуга", "Активно"), option("offers", "Персональные предложения", "done", "Раздел", "Предложения по истории обращений", "Для вас")] },
+    done: completed(profile, integration),
+  };
+}
+
+type JourneyChoice = { label: string; description: string; meta: string };
+type JourneyStage = { question: string; saveAs: string; choices: JourneyChoice[] };
+type IndustryJourney = { first: JourneyStage; second: JourneyStage; extras: JourneyStage; dateQuestion: string; timeQuestion: string };
+
+const journeyStage = (question: string, saveAs: string, choices: JourneyChoice[]): JourneyStage => ({ question, saveAs, choices });
+const industryJourneys: Record<Exclude<BusinessArchetype, "photo">, IndustryJourney> = {
+  beauty: {
+    first: journeyStage("Выберите мастера:", "Мастер", [{ label: "Алексей", description: "Барбер · 6 лет опыта", meta: "11:00" }, { label: "Мария", description: "Стилист-колорист", meta: "15:00" }, { label: "Любой свободный мастер", description: "Подберём ближайшее окно", meta: "Сегодня" }]),
+    second: journeyStage("Какой формат визита вам подходит?", "Формат визита", [{ label: "Новый образ", description: "Подбор по фото и пожеланиям", meta: "Консультация" }, { label: "Регулярный визит", description: "Повторим привычный результат", meta: "Быстро" }, { label: "К событию", description: "Учтём дату и стиль", meta: "Персонально" }]),
+    extras: journeyStage("Добавить к визиту?", "Дополнительно", [{ label: "Уход", description: "Добавим к услуге", meta: "+ 1 000 ₽" }, { label: "Укладка", description: "Готовый образ после услуги", meta: "+ 800 ₽" }, { label: "Только выбранная услуга", description: "Без дополнений", meta: "Готово" }]),
+    dateQuestion: "Выберите день для визита:", timeQuestion: "Какое время подойдёт?",
+  },
+  cleaning: {
+    first: journeyStage("Где нужна уборка?", "Объект", [{ label: "Квартира", description: "Жилая уборка", meta: "Популярно" }, { label: "Дом", description: "Учтём этажи и территорию", meta: "Расчёт" }, { label: "Офис", description: "Подберём бригаду и график", meta: "B2B" }]),
+    second: journeyStage("Какая площадь помещения?", "Площадь", [{ label: "До 50 м²", description: "Компактная уборка", meta: "1 бригада" }, { label: "50–90 м²", description: "Стандартный объём", meta: "2 специалиста" }, { label: "Больше 90 м²", description: "Подготовим расчёт", meta: "Индивидуально" }]),
+    extras: journeyStage("Что добавить к уборке?", "Дополнительно", [{ label: "Мытьё окон", description: "Посчитаем отдельно", meta: "+ опция" }, { label: "Глажка", description: "Добавим в заявку", meta: "+ опция" }, { label: "Только основная уборка", description: "Без дополнений", meta: "Готово" }]),
+    dateQuestion: "На какой день нужна уборка?", timeQuestion: "Во сколько начать работы?",
+  },
+  food: {
+    first: journeyStage("Какой формат выбираете?", "Формат", [{ label: "Столик в зале", description: "Выбор посадки и времени", meta: "Бронь" }, { label: "Самовывоз", description: "Заказ будет готов к времени", meta: "Быстро" }, { label: "Доставка", description: "Уточним адрес и время", meta: "Курьер" }]),
+    second: journeyStage("Сколько гостей или персон?", "Количество гостей", [{ label: "1–2 человека", description: "Компактный стол", meta: "Стандарт" }, { label: "3–4 человека", description: "Стол в основном зале", meta: "Популярно" }, { label: "5 и больше", description: "Проверим большую посадку", meta: "По запросу" }]),
+    extras: journeyStage("Добавить к заказу?", "Дополнительно", [{ label: "Предзаказ по меню", description: "Блюда будут готовы к визиту", meta: "Удобно" }, { label: "Детский стул", description: "Подготовим место", meta: "Бесплатно" }, { label: "Только бронирование", description: "Без дополнений", meta: "Готово" }]),
+    dateQuestion: "Выберите дату:", timeQuestion: "На какое время оформить?",
+  },
+  auto: {
+    first: journeyStage("Какой у вас автомобиль?", "Автомобиль", [{ label: "Легковой", description: "Стандартный пост", meta: "Быстро" }, { label: "Кроссовер", description: "Учтём размер и клиренс", meta: "Популярно" }, { label: "Коммерческий", description: "Подберём подходящий бокс", meta: "По записи" }]),
+    second: journeyStage("Что особенно важно проверить?", "Запрос", [{ label: "По регламенту", description: "ТО и расходники", meta: "Планово" }, { label: "Есть симптом", description: "Проведём диагностику", meta: "Точно" }, { label: "Комплекс работ", description: "Соберём список услуг", meta: "Расчёт" }]),
+    extras: journeyStage("Добавить к визиту?", "Дополнительно", [{ label: "Проверка расходников", description: "Покажем рекомендации", meta: "+ диагностика" }, { label: "Фотоотчёт", description: "Отправим в Telegram", meta: "Удобно" }, { label: "Только выбранная услуга", description: "Без дополнений", meta: "Готово" }]),
+    dateQuestion: "Выберите дату визита:", timeQuestion: "Когда удобно приехать?",
+  },
+  medical: {
+    first: journeyStage("Выберите специалиста:", "Специалист", [{ label: "Анна Власова", description: "Стоматолог-терапевт", meta: "Сегодня · 10:00" }, { label: "Илья Соколов", description: "Ортодонт", meta: "Завтра · 14:00" }, { label: "Подобрать врача", description: "По цели обращения", meta: "Консультация" }]),
+    second: journeyStage("Какой формат приёма нужен?", "Тип приёма", [{ label: "Первичный приём", description: "Диагностика и план", meta: "60 мин" }, { label: "Повторный визит", description: "Продолжение лечения", meta: "По плану" }, { label: "Срочная консультация", description: "Найдём ближайшее окно", meta: "Приоритет" }]),
+    extras: journeyStage("Что добавить к записи?", "Дополнительно", [{ label: "Напоминание за день", description: "Отправим в Telegram", meta: "Авто" }, { label: "Подготовить вопросы врачу", description: "Сохраним в карточке", meta: "Удобно" }, { label: "Только запись", description: "Без дополнений", meta: "Готово" }]),
+    dateQuestion: "Выберите день для приёма:", timeQuestion: "Выберите время:",
+  },
+  education: {
+    first: journeyStage("Какой у вас текущий уровень?", "Уровень", [{ label: "Начинающий", description: "Начнём с основы", meta: "Старт" }, { label: "Средний", description: "Подберём подходящую группу", meta: "Группа" }, { label: "Продвинутый", description: "Проверим цель и программу", meta: "Персонально" }]),
+    second: journeyStage("Какой формат обучения удобнее?", "Формат обучения", [{ label: "Индивидуально", description: "Гибкое расписание", meta: "1 на 1" }, { label: "В группе", description: "Подберём ближайший поток", meta: "Группа" }, { label: "Онлайн", description: "Подключение из дома", meta: "Дистанционно" }]),
+    extras: journeyStage("Что подготовить к старту?", "Дополнительно", [{ label: "Пробный урок", description: "Познакомимся с форматом", meta: "Бесплатно" }, { label: "Подбор программы", description: "Отправим план обучения", meta: "Персонально" }, { label: "Только консультация", description: "Без записи на урок", meta: "Готово" }]),
+    dateQuestion: "Выберите день для знакомства:", timeQuestion: "Во сколько провести урок?",
+  },
+  realty: {
+    first: journeyStage("Какой бюджет рассматриваете?", "Бюджет", [{ label: "До 10 млн ₽", description: "Подберём компактные варианты", meta: "Подбор" }, { label: "10–20 млн ₽", description: "Актуальные предложения", meta: "Популярно" }, { label: "Индивидуальный бюджет", description: "Соберём параметры", meta: "Консультация" }]),
+    second: journeyStage("Какой район интересует?", "Район", [{ label: "Центр", description: "Варианты в пешей доступности", meta: "Город" }, { label: "У метро", description: "Проверим транспорт", meta: "Удобно" }, { label: "За городом", description: "Учтём участок и инфраструктуру", meta: "Загород" }]),
+    extras: journeyStage("Что отправить после подбора?", "Дополнительно", [{ label: "Подборку объектов", description: "Ссылка с актуальными вариантами", meta: "Telegram" }, { label: "Консультацию брокера", description: "Разберём стратегию сделки", meta: "Онлайн" }, { label: "Только запрос", description: "Без дополнительных материалов", meta: "Готово" }]),
+    dateQuestion: "Когда показать подборку?", timeQuestion: "Выберите время связи:",
+  },
+  repair: {
+    first: journeyStage("Какая задача у мастера?", "Задача", [{ label: "Диагностика", description: "Сначала найдём причину", meta: "Точно" }, { label: "Ремонт", description: "Подготовим работы", meta: "Расчёт" }, { label: "Срочный выезд", description: "Проверим ближайшее окно", meta: "Приоритет" }]),
+    second: journeyStage("Где нужна помощь?", "Объект", [{ label: "Квартира", description: "Жилое помещение", meta: "Дом" }, { label: "Офис", description: "Согласуем пропуск и время", meta: "Бизнес" }, { label: "Дом / участок", description: "Учтём выезд и доступ", meta: "Выезд" }]),
+    extras: journeyStage("Что добавить к заявке?", "Дополнительно", [{ label: "Материалы мастера", description: "Привезём необходимое", meta: "Под ключ" }, { label: "Фото проблемы", description: "Уточним смету заранее", meta: "Быстрее" }, { label: "Только диагностика", description: "Без дополнительных работ", meta: "Готово" }]),
+    dateQuestion: "На какой день нужен выезд?", timeQuestion: "В какое время ждёте мастера?",
+  },
+  b2b: {
+    first: journeyStage("Какой масштаб задачи?", "Масштаб", [{ label: "Один процесс", description: "Начнём с пилота", meta: "Быстро" }, { label: "Отдел или команда", description: "Свяжем роли и данные", meta: "Система" }, { label: "Несколько сервисов", description: "Подготовим карту интеграций", meta: "Комплексно" }]),
+    second: journeyStage("С чего хотите начать?", "Первый шаг", [{ label: "Разбор процесса", description: "Найдём точки автоматизации", meta: "Аудит" }, { label: "Интеграция сервисов", description: "Определим данные и триггеры", meta: "CRM" }, { label: "AI-помощник", description: "Соберём сценарий работы", meta: "AI" }]),
+    extras: journeyStage("Что прислать после встречи?", "Дополнительно", [{ label: "Оценку сроков", description: "План внедрения", meta: "Документ" }, { label: "Релевантные кейсы", description: "Примеры решений", meta: "Подборка" }, { label: "Только краткий итог", description: "Без дополнительных материалов", meta: "Готово" }]),
+    dateQuestion: "Выберите день для разбора:", timeQuestion: "Когда удобно обсудить задачу?",
+  },
+  generic: {
+    first: journeyStage("Какую задачу нужно решить?", "Цель", [{ label: "Подобрать услугу", description: "Поможем выбрать подходящий вариант", meta: "Подбор" }, { label: "Рассчитать стоимость", description: "Соберём параметры для расчёта", meta: "Расчёт" }, { label: "Запланировать консультацию", description: "Разберём задачу с экспертом", meta: "Онлайн" }]),
+    second: journeyStage("Что для вас важнее?", "Приоритет", [{ label: "Скорость запуска", description: "Покажем ближайший вариант", meta: "Быстро" }, { label: "Точный подбор", description: "Учтём все детали", meta: "Персонально" }, { label: "Понятная стоимость", description: "Подготовим расчёт", meta: "Прозрачно" }]),
+    extras: journeyStage("Как получить результат?", "Формат связи", [{ label: "В Telegram", description: "Отправим всё в чат", meta: "Telegram" }, { label: "Созвон с экспертом", description: "Выберем подходящее время", meta: "Звонок" }, { label: "Только краткая заявка", description: "Без дополнительных шагов", meta: "Готово" }]),
+    dateQuestion: "Выберите удобный день:", timeQuestion: "Выберите время связи:",
+  },
+};
+
+const journeyFor = (profile: BusinessProfile) => industryJourneys[profile.archetype === "photo" ? "generic" : profile.archetype];
+const stageOptions = (stage: JourneyStage, nextStepId: string) => stage.choices.map((choice, index) => option(`${stage.saveAs}-${index}`, choice.label, nextStepId, stage.saveAs, choice.description, choice.meta));
+const dates = (nextStepId: string) => [option("today", "Сегодня", nextStepId, "Дата", "Есть свободные окна", "2 окна"), option("tomorrow", "Завтра", nextStepId, "Дата", "Больше доступного времени", "5 окон"), option("weekend", "На выходных", nextStepId, "Дата", "Спокойный график", "3 окна")];
+const times = (nextStepId: string) => [option("morning", "10:30", nextStepId, "Время", "Утреннее окно", "Свободно"), option("day", "14:00", nextStepId, "Время", "Дневное окно", "Свободно"), option("evening", "18:30", nextStepId, "Время", "Вечернее окно", "Свободно")];
+
+function deepFunnelSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const journey = journeyFor(profile);
+  return {
+    welcome: { id: "welcome", botMessage: `Здравствуйте! За пару шагов соберу запрос для «${profile.name}».`, options: [option("start", "Подобрать решение", "catalogue", "Цель", "Пройдём короткий путь клиента", "≈ 2 минуты"), option("price", "Получить расчёт", "catalogue", "Цель", "Соберём параметры без звонка", "Расчёт")] },
+    catalogue: { id: "catalogue", botMessage: "Выберите интересующую услугу:", options: fromCatalogue(profile, "first") },
+    first: { id: "first", botMessage: journey.first.question, options: stageOptions(journey.first, "second") },
+    second: { id: "second", botMessage: journey.second.question, options: stageOptions(journey.second, "contact-channel") },
+    "contact-channel": { id: "contact-channel", botMessage: "Куда отправить готовый ответ?", options: [option("telegram", "В Telegram", "name", "Канал связи", "Подборка и следующий шаг в чате", "Telegram"), option("call", "Звонком", "name", "Канал связи", "Специалист уточнит детали", "Телефон")] },
+    name: name("phone"), phone: phone(profile.contactPrompt, "done"), done: completed(profile, "Telegram администратору"),
+  };
+}
+
+function deepBasicSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const journey = journeyFor(profile); const integration = bookingIntegration(profile);
+  return {
+    welcome: { id: "welcome", botMessage: `Добро пожаловать в «${profile.name}»! Выберите, с чего начать:`, options: [option("catalog", "Каталог услуг", "catalogue", "Раздел", "Цены, условия и варианты", "Каталог"), option("quick", "Быстрый подбор", "catalogue", "Раздел", "Соберём путь до записи", "Онлайн"), option("faq", "Вопросы и ответы", "catalogue", "Раздел", "Перейдём к нужному действию", "FAQ")] },
+    catalogue: { id: "catalogue", botMessage: "Выберите услугу из каталога:", options: fromCatalogue(profile, "first") },
+    first: { id: "first", botMessage: journey.first.question, integration, options: stageOptions(journey.first, "second") },
+    second: { id: "second", botMessage: journey.second.question, options: stageOptions(journey.second, "date") },
+    date: { id: "date", botMessage: journey.dateQuestion, integration, options: dates("time") },
+    time: { id: "time", botMessage: journey.timeQuestion, options: times("extras") },
+    extras: { id: "extras", botMessage: journey.extras.question, options: stageOptions(journey.extras, "name") },
+    name: name("phone"), phone: phone(profile.contactPrompt, "done"), done: completed(profile, integration),
+  };
+}
+
+function deepAdvancedSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const journey = journeyFor(profile); const integration = profile.integration === "YCLIENTS" ? "YCLIENTS + CRM" : "CRM + автоматизация";
+  return {
+    welcome: { id: "welcome", botMessage: `Здравствуйте! «${profile.name}» учитывает историю обращений, чтобы быстрее собрать подходящий путь.`, options: [option("new", "Я здесь впервые", "catalogue", "Статус клиента", "Соберём сценарий с нуля", "Новый клиент"), option("return", "Я уже клиент", "client-card", "Статус клиента", "Покажем персональный путь", "Личный кабинет")] },
+    "client-card": { id: "client-card", botMessage: "Нашли карточку клиента. Можно повторить прошлый путь или выбрать новый вариант.", integration, options: [option("repeat", "Повторить прошлый путь", "date", "Действие", "Сразу покажем свободные окна", "1 минута"), option("new-path", "Выбрать новую услугу", "catalogue", "Действие", "Соберём новые параметры", "Подбор")] },
+    catalogue: { id: "catalogue", botMessage: "Что вас интересует сейчас?", options: fromCatalogue(profile, "first") },
+    first: { id: "first", botMessage: journey.first.question, integration, options: stageOptions(journey.first, "second") },
+    second: { id: "second", botMessage: journey.second.question, options: stageOptions(journey.second, "date") },
+    date: { id: "date", botMessage: `${journey.dateQuestion} Слот удержим на 15 минут.`, integration, options: dates("time") },
+    time: { id: "time", botMessage: journey.timeQuestion, options: times("extras") },
+    extras: { id: "extras", botMessage: journey.extras.question, options: stageOptions(journey.extras, "name") },
+    name: name("phone"), phone: phone("Оставьте телефон — создадим карточку клиента и отправим подтверждение.", "crm"),
+    crm: { id: "crm", botMessage: "Карточка клиента собрана: услуга, параметры, слот и контакт уже в CRM.", integration, options: [option("reminder", "Настроить напоминание", "automation", "Следующее действие", "Сообщение придёт автоматически", "24 часа"), option("offer", "Получить персональное предложение", "automation", "Следующее действие", "Подберём следующий шаг", "AI-подбор")] },
+    automation: { id: "automation", botMessage: "Автоматизация готова: клиент получит подтверждение, а команда увидит статус и все выбранные параметры.", integration, options: [option("finish", "Завершить сценарий", "done", "Статус", "Все данные сохранены", "Готово")] }, done: completed(profile, integration),
+  };
+}
+
+function deepMiniAppSteps(profile: BusinessProfile): Record<string, DemoStep> {
+  const journey = journeyFor(profile); const integration = `Mini App + ${bookingIntegration(profile)} + CRM`; const app = (note: string, subtitle: string, section: string) => mini(profile, note, subtitle, section);
+  return {
+    home: { id: "home", botMessage: `Откройте Mini App «${profile.name}»: клиент проходит путь от выбора услуги до подтверждения в личном кабинете.`, miniApp: app("Ваш следующий шаг", "Каталог, параметры, время и личный кабинет", "Главная"), options: [option("catalog", "Подобрать услугу", "catalogue", "Раздел", "Сценарий под задачу клиента", "Каталог"), option("booking", "Быстрый путь", "catalogue", "Раздел", "Сразу к выбору и записи", "Онлайн"), option("account", "Мои обращения", "account", "Раздел", "История и активные заявки", "Профиль")] },
+    catalogue: { id: "catalogue", botMessage: "Каталог открыт. Выберите услугу:", miniApp: app("Услуги и цены", "Карточки с условиями и деталями", "Каталог"), options: fromCatalogue(profile, "first") },
+    first: { id: "first", botMessage: journey.first.question, miniApp: app("Подбор параметров", "Учитываем детали конкретной отрасли", "Услуга"), options: stageOptions(journey.first, "second") },
+    second: { id: "second", botMessage: journey.second.question, miniApp: app("Параметры запроса", "Собираем путь до подтверждения", "Услуга"), options: stageOptions(journey.second, "date") },
+    date: { id: "date", botMessage: `${journey.dateQuestion} Расписание обновляется в реальном времени.`, integration, miniApp: app("Свободные даты", "Выберите подходящий день", "Расписание"), options: dates("time") },
+    time: { id: "time", botMessage: journey.timeQuestion, integration, miniApp: app("Свободное время", "Слот удерживается до оформления", "Расписание"), options: times("extras") },
+    extras: { id: "extras", botMessage: journey.extras.question, miniApp: app("Дополнительные опции", "Добавьте нужное в один тап", "Каталог"), options: stageOptions(journey.extras, "phone") },
+    phone: phone("Оставьте телефон — после подтверждения данные появятся в личном кабинете.", "checkout"),
+    checkout: { id: "checkout", botMessage: "Параметры сохранены. Подтвердите выбранный вариант:", integration, miniApp: app("Подтверждение", "Заказ, запись или заявка будут закреплены", "Расписание"), options: [option("confirm", "Подтвердить заявку", "account", "Подтверждение", "Данные переданы в систему", "Готово"), option("change", "Изменить параметры", "catalogue", "Действие", "Вернуться к выбору", "Назад")] },
+    account: { id: "account", botMessage: "Личный кабинет обновлён: здесь клиент видит статус, выбранные параметры и следующий шаг.", integration, miniApp: app("Мои обращения", "Все детали собраны в одной карточке", "Профиль"), options: [option("details", "Посмотреть детали", "done", "Раздел", "Услуга, параметры и время", "Активно"), option("repeat", "Создать похожий запрос", "catalogue", "Действие", "Повторить путь быстрее", "Быстро")] },
     done: completed(profile, integration),
   };
 }
@@ -167,7 +305,7 @@ function photoMiniAppSteps(profile: BusinessProfile): Record<string, DemoStep> {
 
 export function buildDynamicScenario(profile: BusinessProfile, tariff: PricingPlan, scenarioId = "custom"): DemoScenario {
   const photoSteps = tariff.id === "miniapp" ? photoMiniAppSteps : tariff.id === "advanced" ? photoAdvancedSteps : tariff.id === "funnel" ? photoFunnelSteps : photoBasicSteps;
-  const steps = profile.archetype === "photo" ? photoSteps(profile) : tariff.id === "miniapp" ? miniAppSteps(profile) : tariff.id === "advanced" ? advancedSteps(profile) : tariff.id === "funnel" ? funnelSteps(profile) : basicSteps(profile);
+  const steps = profile.archetype === "photo" ? photoSteps(profile) : tariff.id === "miniapp" ? deepMiniAppSteps(profile) : tariff.id === "advanced" ? deepAdvancedSteps(profile) : tariff.id === "funnel" ? deepFunnelSteps(profile) : deepBasicSteps(profile);
   const titleByPlan: Record<string, string> = { funnel: "Автоматическая воронка", basic: "Каталог и запись", advanced: "Персональный сценарий", miniapp: "Mini App: интерфейс клиента" };
   const descriptionByPlan: Record<string, string> = { funnel: "Быстрая квалификация и передача", basic: "Услуги, FAQ и онлайн-запись", advanced: "CRM, сегменты и автоматизация", miniapp: "Каталог, расписание и личный кабинет" };
   return { id: scenarioId, industry: profile.name, title: titleByPlan[tariff.id] ?? "Сценарий клиента", description: descriptionByPlan[tariff.id] ?? "Путь клиента", icon: "business", startStepId: tariff.id === "miniapp" ? "home" : "welcome", steps, forceScenarioEntry: true };
